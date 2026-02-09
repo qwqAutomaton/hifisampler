@@ -1,0 +1,40 @@
+﻿name: Build clients for multiple platforms when released
+
+# triggers when a new release is created
+on:
+  release:
+    types: [created]
+
+jobs:
+  compile:
+    name: Compile for ${{ matrix.rid }}
+    runs-on: ubuntu-latest
+    
+    # runs the job for each platform in the matrix
+    strategy:
+      matrix:
+        rid: [win-x64, osx-x64]
+
+    steps:
+    # Check out the code
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # Install the .NET SDK
+    - name: Setup .NET 9
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x' # according to the previous release
+
+    # Compile the code for multiple platforms
+    - name: Publish for ${{ matrix.rid }}
+      working-directory: ./client
+      run: |
+        dotnet publish -c Release -r ${{ matrix.rid }} /p:PublishAot=true -o output/${{ matrix.rid }}
+
+    # upload them
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: hifisampler-${{ matrix.rid }}
+        path: client/output/${{ matrix.rid }}
